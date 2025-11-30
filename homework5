@@ -1,0 +1,196 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyOou5GTa//5fP9O7B24zta1",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/SivaKrishna1266/homewoke1/blob/main/homework5\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Part B — Coding\n",
+        "Q1. Compute Scaled Dot-Product Attention (Python)\n"
+      ],
+      "metadata": {
+        "id": "U3ilEKQumTOR"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "Q = np.array([[1, 0], [0, 1]])\n",
+        "K = np.array([[1, 0], [0, 1]])\n",
+        "V = np.array([[1, 2], [3, 4]])\n",
+        "\n",
+        "weights, context = scaled_dot_product_attention(Q, K, V)\n",
+        "print(\"Attention Weights:\\n\", weights)\n",
+        "print(\"Context Vector:\\n\", context)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "E9EPSvP0lO5C",
+        "outputId": "4752ad56-2903-42d6-af7b-197d73feadfc"
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Attention Weights:\n",
+            " [[0.66976155 0.33023845]\n",
+            " [0.33023845 0.66976155]]\n",
+            "Context Vector:\n",
+            " [[1.6604769 2.6604769]\n",
+            " [2.3395231 3.3395231]]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import numpy as np\n",
+        "\n",
+        "def scaled_dot_product_attention(Q, K, V):\n",
+        "    d_k = Q.shape[-1]\n",
+        "    scores = np.matmul(Q, K.T) / np.sqrt(d_k)\n",
+        "    exp_scores = np.exp(scores - np.max(scores, axis=-1, keepdims=True))\n",
+        "    weights = exp_scores / np.sum(exp_scores, axis=-1, keepdims=True)\n",
+        "    context = np.matmul(weights, V)\n",
+        "    return weights, context\n",
+        "\n",
+        "\n",
+        "Q = np.array([[1, 0], [0, 1]])\n",
+        "K = np.array([[1, 0], [0, 1]])\n",
+        "V = np.array([[1, 2], [3, 4]])\n",
+        "\n",
+        "weights, context = scaled_dot_product_attention(Q, K, V)\n",
+        "\n",
+        "print(\"Attention Weights:\\n\", weights)\n",
+        "print(\"Context Vector:\\n\", context)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "xfGAmMi1lw_d",
+        "outputId": "891b2961-08db-472b-a6b7-f9998e0b5a9c"
+      },
+      "execution_count": 10,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Attention Weights:\n",
+            " [[0.66976155 0.33023845]\n",
+            " [0.33023845 0.66976155]]\n",
+            "Context Vector:\n",
+            " [[1.6604769 2.6604769]\n",
+            " [2.3395231 3.3395231]]\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "**Q2. Implement Simple Transformer Encoder Block (PyTorch)**"
+      ],
+      "metadata": {
+        "id": "6H-47RJ3m8RU"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import torch\n",
+        "import torch.nn as nn\n",
+        "\n",
+        "class TransformerEncoderBlock(nn.Module):\n",
+        "    def __init__(self, d_model=128, h=8):\n",
+        "        super().__init__()\n",
+        "        # Multi-head self-attention\n",
+        "        self.attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=h, batch_first=True)\n",
+        "        # Feed-forward network\n",
+        "        self.ffn = nn.Sequential(\n",
+        "            nn.Linear(d_model, d_model*4),\n",
+        "            nn.ReLU(),\n",
+        "            nn.Linear(d_model*4, d_model)\n",
+        "        )\n",
+        "        # Layer normalization\n",
+        "        self.norm1 = nn.LayerNorm(d_model)\n",
+        "        self.norm2 = nn.LayerNorm(d_model)\n",
+        "\n",
+        "    def forward(self, x):\n",
+        "        # Multi-head attention with residual connection\n",
+        "        attn_out, _ = self.attn(x, x, x)\n",
+        "        x = self.norm1(x + attn_out)\n",
+        "\n",
+        "        # Feed-forward with residual connection\n",
+        "        ffn_out = self.ffn(x)\n",
+        "        x = self.norm2(x + ffn_out)\n",
+        "        return x\n",
+        "\n",
+        "# ---- MANUAL INPUT EXAMPLE ----\n",
+        "# Batch of 32 sentences, each with 10 tokens, embedding size 128\n",
+        "batch = torch.randn(32, 10, 128)\n",
+        "\n",
+        "encoder = TransformerEncoderBlock()\n",
+        "output = encoder(batch)\n",
+        "\n",
+        "print(\"Input shape:\", batch.shape)\n",
+        "print(\"Output shape:\", output.shape)\n",
+        "print(\"\\nFirst sentence, first 2 tokens (truncated):\")\n",
+        "print(output[0, :2, :5])  # show first 5 dimensions of first 2 tokens"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "jUa6wwV_m72n",
+        "outputId": "c699771c-5f2d-43d1-c9ef-73b61afe2eb4"
+      },
+      "execution_count": 11,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Input shape: torch.Size([32, 10, 128])\n",
+            "Output shape: torch.Size([32, 10, 128])\n",
+            "\n",
+            "First sentence, first 2 tokens (truncated):\n",
+            "tensor([[-1.3975, -0.1361, -0.5052, -0.1644,  2.7688],\n",
+            "        [-0.0360, -1.3957, -0.2878, -0.8559, -2.2418]],\n",
+            "       grad_fn=<SliceBackward0>)\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
